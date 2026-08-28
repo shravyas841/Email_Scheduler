@@ -49,7 +49,6 @@ Workers claim `SCHEDULED` rows transactionally, retry transient SMTP failures, r
 
 - SMTP has a crash-after-acceptance window: if the provider accepts a message and the worker crashes before PostgreSQL is marked `SENT`, a retry can produce a duplicate. Database idempotency and transactional claiming reduce duplicates but cannot provide exactly-once SMTP semantics.
 - “Multiple senders” means multiple sender identities and independent limits while using one global Ethereal/SMTP account. Sender-specific SMTP credentials are not stored or exposed; adding encrypted per-sender credentials would be a product decision, not required for the local Ethereal interpretation.
-- The supplied Figma reference was view-only; the dashboard follows its dark layout and information hierarchy using maintainable CSS, but pixel-perfect asset reproduction is not claimed.
 - Express’s in-memory session store is suitable for local evaluation only. Production should use a shared persistent session store and HTTPS.
 - Google, Slack, and Ethereal live flows require operator credentials and were not claimed as locally verified in this repository.
 - `npm audit --omit=dev` reports two moderate transitive advisories (`uuid` through `gaxios` and `google-auth-library`; missing buffer bounds check, affecting versions below `uuid` 11.1.1). The current OAuth dependency chain pins `gaxios@6`/`uuid@9`; no compatible, non-breaking transitive override was applied. The application does not call the vulnerable UUID buffer APIs directly. Re-evaluate when upgrading `google-auth-library`.
