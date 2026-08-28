@@ -1,6 +1,7 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 
 import { logger } from '../config/logger.js';
+import { AppError } from '../errors/app-error.js';
 
 export const notFoundHandler: RequestHandler = (request, response) => {
   response.status(404).json({
@@ -12,6 +13,13 @@ export const notFoundHandler: RequestHandler = (request, response) => {
 };
 
 export const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
+  if (error instanceof AppError) {
+    response.status(error.statusCode).json({
+      error: { code: error.code, message: error.message },
+    });
+    return;
+  }
+
   logger.error({ err: error }, 'Unhandled API error');
 
   response.status(500).json({

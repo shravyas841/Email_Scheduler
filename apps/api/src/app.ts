@@ -6,6 +6,7 @@ import { pinoHttp } from 'pino-http';
 import { environment } from './config/environment.js';
 import { logger } from './config/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
+import { emailRouter } from './routes/email-routes.js';
 import { healthRouter } from './routes/health-routes.js';
 
 export const createApp = () => {
@@ -22,6 +23,7 @@ export const createApp = () => {
   app.use(express.json({ limit: '1mb' }));
 
   app.use('/health', healthRouter);
+  app.use('/api/emails', emailRouter);
   app.use(notFoundHandler);
   app.use(errorHandler);
 

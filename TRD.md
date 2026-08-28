@@ -53,7 +53,7 @@ Indexes include `(userId, status, scheduledAt)`, `(senderId, status, scheduledAt
 
 ## Scheduling and recovery
 
-The API validates a request, normalizes/deduplicates recipients, creates `EmailJob` records transactionally, and adds a BullMQ delayed job with deterministic ID `email:<emailJobId>`. Redis persists delayed jobs. On restart, workers reconnect to existing queues; they never recreate every database row on startup. A targeted reconciliation process may restore only known rows missing their deterministic queue job.
+The API validates a request, normalizes/deduplicates recipients, creates `EmailJob` records transactionally, and adds a BullMQ delayed job with deterministic ID `email-<emailJobId>`. Redis persists delayed jobs. On restart, workers reconnect to existing queues; they never recreate every database row on startup. A targeted reconciliation process may restore only known rows missing their deterministic queue job.
 
 ## Idempotency and retries
 
