@@ -8,7 +8,7 @@ import { redisConnection } from '../queues/redis-connection.js';
 import { EmailDeliveryService } from '../services/email-delivery-service.js';
 import { RateLimiter } from '../services/rate-limiter.js';
 import { indexEmail } from '../integrations/search/elasticsearch.js';
-import { decrypt, notifySlack } from '../integrations/slack/slack-service.js';
+import { notifyRateLimit } from '../services/slack-rate-notifier.js';
 
 const emailDeliveryService = new EmailDeliveryService();
 const rateLimiter = new RateLimiter();
@@ -30,15 +30,9 @@ const worker = new Worker<EmailSendQueueData>(
     );
     if (!decision.allowed) {
       if (decision.reason === 'hourly-limit') {
-        const slack = await prisma.slackConnection.findUnique({ where: { userId: emailJob.userId } });
         const window = new Date(); window.setUTCMinutes(0, 0, 0);
-        const alertKey = `slack-rate-alert:${emailJob.senderId}:${window.toISOString()}`;
-        const firstAlert = await redisConnection.set(alertKey, '1', 'EX', 7200, 'NX');
-        const channelId = slack?.channelId ?? environment.SLACK_DEFAULT_CHANNEL_ID;
-        if (slack && channelId && firstAlert === 'OK') {
-          try { await notifySlack(decrypt(slack.accessTokenEncrypted), channelId, `Rate limit reached for ${emailJob.sender.email}. Additional emails have been rescheduled.`); logger.info({ senderId: emailJob.senderId }, 'SLACK_NOTIFICATION_SENT'); }
-          catch (error) { logger.error({ err: error, senderId: emailJob.senderId }, 'SLACK_NOTIFICATION_FAILED'); }
-        }
+        const alertResult = await notifyRateLimit(emailJob.userId, emailJob.senderId, emailJob.sender.email, window);
+        if (alertResult === 'sent') logger.info({ senderId: emailJob.senderId }, 'SLACK_NOTIFICATION_SENT');
       }
       await queueJob.moveToDelayed(decision.retryAt, queueJob.token);
       logger.info({ emailJobId: emailJob.id, retryAt: decision.retryAt, reason: decision.reason }, 'EMAIL_RESCHEDULED');
