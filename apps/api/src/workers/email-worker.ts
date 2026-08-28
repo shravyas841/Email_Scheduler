@@ -7,6 +7,7 @@ import { EMAIL_SEND_QUEUE_NAME, type EmailSendQueueData } from '../queues/email-
 import { redisConnection } from '../queues/redis-connection.js';
 import { EmailDeliveryService } from '../services/email-delivery-service.js';
 import { RateLimiter } from '../services/rate-limiter.js';
+import { indexEmail } from '../integrations/search/elasticsearch.js';
 
 const emailDeliveryService = new EmailDeliveryService();
 const rateLimiter = new RateLimiter();
@@ -63,6 +64,15 @@ const worker = new Worker<EmailSendQueueData>(
         }),
       ]);
       logger.info({ emailJobId: emailJob.id }, 'EMAIL_SENT');
+      try {
+        await indexEmail({
+          id: emailJob.id, userId: emailJob.userId, sender: emailJob.sender.email,
+          recipient: emailJob.recipient, subject: emailJob.subject, body: emailJob.body,
+          status: 'SENT', scheduledAt: emailJob.scheduledAt, sentAt: new Date(),
+        });
+      } catch (indexError) {
+        logger.error({ err: indexError, emailJobId: emailJob.id }, 'ELASTICSEARCH_INDEX_FAILED');
+      }
     } catch (error) {
       const finalAttempt = queueJob.attemptsMade + 1 >= (queueJob.opts.attempts ?? 1);
       await prisma.$transaction([

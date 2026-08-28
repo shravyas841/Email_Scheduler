@@ -7,6 +7,7 @@ import { environment } from './config/environment.js';
 import { logger } from './config/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { emailRouter } from './routes/email-routes.js';
+import { searchRouter } from './routes/search-routes.js';
 import { healthRouter } from './routes/health-routes.js';
 
 export const createApp = () => {
@@ -24,6 +25,7 @@ export const createApp = () => {
 
   app.use('/health', healthRouter);
   app.use('/api/emails', emailRouter);
+  app.use('/api/emails', searchRouter);
   app.use(notFoundHandler);
   app.use(errorHandler);
 
