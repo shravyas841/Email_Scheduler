@@ -64,7 +64,7 @@ h2 {
   color: #8b96b8;
   font-size: 13px;
 }
-.csv-summary{display:grid;gap:5px;margin-top:10px;padding:10px 12px;border:1px solid #2d3b5d;border-radius:8px;background:#0e172b;color:#aebbe0;font-size:13px}.csv-summary strong{color:#eef2ff}.csv-error{color:#f0a6ae}
+.csv-summary{display:grid;gap:5px;margin-top:10px;padding:10px 12px;border:1px solid #2d3b5d;border-radius:8px;background:#0e172b;color:#aebbe0;font-size:13px}.csv-summary strong{color:#eef2ff}.csv-summary-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.clear-csv{padding:5px 9px;border:1px solid #46547c;border-radius:7px;background:transparent;color:#aeb8d5;font-size:12px;cursor:pointer}.clear-csv:hover,.clear-csv:focus-visible{border-color:#8c7dff;color:#fff}.csv-error{color:#f0a6ae}
 .avatar {
   width: 42px;
   height: 42px;

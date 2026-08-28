@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { parseCsv, type CsvIssue } from "./lead-parser";
@@ -26,6 +26,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [recipients, setRecipients] = useState<string[]>([]);
+  const [manualRecipients, setManualRecipients] = useState<string[]>([]);
+  const [csvRecipients, setCsvRecipients] = useState<string[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -37,8 +40,9 @@ function App() {
   const [cancellingId, setCancellingId] = useState<string>();
   const [sessionExpired, setSessionExpired] = useState(false);
   const [csvSummary, setCsvSummary] = useState<{ duplicates: number; invalidRows: CsvIssue[]; error?: string }>();
-  const parseManual = (text: string) => { setRecipients([...new Set(text.match(/[^\s,;]+@[^\s,;]+\.[^\s,;]+/g)?.map((email) => email.toLowerCase()) ?? [])]); setCsvSummary(undefined); };
-  const parseFile = (text: string) => { const result = parseCsv(text); setRecipients(result.recipients); setCsvSummary({ duplicates: result.duplicates, invalidRows: result.invalidRows, error: result.error }); };
+  const parseManual = (text: string) => { const parsed = [...new Set(text.match(/[^\s,;]+@[^\s,;]+\.[^\s,;]+/g)?.map((email) => email.toLowerCase()) ?? [])]; setManualRecipients(parsed); setRecipients([...new Set([...parsed, ...csvRecipients])]); setCsvSummary(undefined); };
+  const parseFile = (text: string) => { const result = parseCsv(text); setCsvRecipients(result.recipients); setRecipients([...new Set([...manualRecipients, ...result.recipients])]); setCsvSummary({ duplicates: result.duplicates, invalidRows: result.invalidRows, error: result.error }); };
+  const clearCsv = () => { setCsvRecipients([]); setRecipients(manualRecipients); setCsvSummary(undefined); if (fileInput.current) fileInput.current.value = ""; };
   const load = async () => {
     setLoading(true);
     const [me, senderResponse, emailResponse, slackResponse] = await Promise.all([
@@ -190,6 +194,7 @@ function App() {
             CSV or text file
             <input
               type="file"
+              ref={fileInput}
               accept=".csv,.txt,text/csv,text/plain"
               onChange={(event) =>
                 void event.target.files?.[0]?.text().then(parseFile)
@@ -200,6 +205,7 @@ function App() {
             Recipients
             <textarea
               className="recipients"
+              value={manualRecipients.join(", ")}
               placeholder="Paste emails or CSV text"
               onChange={(event) => parseManual(event.target.value)}
             />
@@ -208,7 +214,7 @@ function App() {
             {recipients.length} valid unique email
             {recipients.length === 1 ? "" : "s"} detected
           </p>
-          {csvSummary && <div className="csv-summary"><strong>{csvSummary.error ? "CSV could not be processed" : "CSV processed"}</strong>{csvSummary.error ? <span className="csv-error">{csvSummary.error}</span> : <><span>✓ {recipients.length} valid unique recipient{recipients.length === 1 ? "" : "s"}</span>{csvSummary.duplicates > 0 && <span>↻ {csvSummary.duplicates} duplicate{csvSummary.duplicates === 1 ? "" : "s"} removed</span>}{csvSummary.invalidRows.length > 0 && <span className="csv-error">⚠ {csvSummary.invalidRows.length} invalid row{csvSummary.invalidRows.length === 1 ? "" : "s"}</span>}{csvSummary.invalidRows.map((issue) => <small className="csv-error" key={`${issue.row}-${issue.message}`}>Row {issue.row}: {issue.message}</small>)}</>}</div>}
+          {csvSummary && <div className="csv-summary"><div className="csv-summary-head"><strong>{csvSummary.error ? "CSV could not be processed" : "CSV processed"}</strong><button type="button" className="clear-csv" onClick={clearCsv}>Remove CSV</button></div>{csvSummary.error ? <span className="csv-error">{csvSummary.error}</span> : <><span>✓ {csvRecipients.length} valid unique recipient{csvRecipients.length === 1 ? "" : "s"}</span>{csvSummary.duplicates > 0 && <span>↻ {csvSummary.duplicates} duplicate{csvSummary.duplicates === 1 ? "" : "s"} removed</span>}{csvSummary.invalidRows.length > 0 && <span className="csv-error">⚠ {csvSummary.invalidRows.length} invalid row{csvSummary.invalidRows.length === 1 ? "" : "s"}</span>}{csvSummary.invalidRows.map((issue) => <small className="csv-error" key={`${issue.row}-${issue.message}`}>Row {issue.row}: {issue.message}</small>)}</>}</div>}
           </div>
           <div className="form-section">
             <div className="section-label">MESSAGE</div>
