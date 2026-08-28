@@ -3,6 +3,7 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import { scheduleEmailsSchema, EmailSchedulingService } from '../services/email-scheduling-service.js';
 import { requireAuth } from '../middleware/auth.js';
 import { prisma } from '../config/database.js';
+import { cancelEmail } from '../services/email-cancellation-service.js';
 
 export const emailRouter = Router();
 
@@ -16,6 +17,10 @@ emailRouter.post('/schedule', requireAuth, async (request, response, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+emailRouter.post('/:id/cancel', requireAuth, async (request, response, next) => {
+  try { response.json(await cancelEmail(request.userId, String(request.params.id))); } catch (error) { next(error); }
 });
 
 const list = (status: 'SCHEDULED' | 'SENT' | 'FAILED') => async (request: Request, response: Response, next: NextFunction) => {

@@ -287,3 +287,4 @@ a {
 a:hover {
   color: #ffffff;
 }
+.table-action{padding:6px 10px;border:1px solid #46547c;border-radius:7px;color:#c0baff}.table-action:hover:not(:disabled){border-color:#8c7dff;color:#fff}.table-action:disabled{opacity:.55;cursor:wait}

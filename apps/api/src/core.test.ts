@@ -9,6 +9,7 @@ import { RateLimiter } from './services/rate-limiter.js';
 import { EmailSearchService } from './services/email-search-service.js';
 import { indexEmail, elasticsearch, emailIndex } from './integrations/search/elasticsearch.js';
 import { notifyRateLimit } from './services/slack-rate-notifier.js';
+import { cancelEmail } from './services/email-cancellation-service.js';
 import { encrypt } from './integrations/slack/slack-service.js';
 import { requireAuth } from './middleware/auth.js';
 
@@ -73,6 +74,17 @@ describe('scheduling and rate limiting', () => {
     expect(jobs.every((job) => job?.opts.delay && job.opts.delay > 0)).toBe(true);
     expect((await service.schedule(input)).scheduledCount).toBe(2);
     await expect(service.schedule({ ...input, userId: userB.id })).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('cancels only the owner\'s scheduled job and preserves its audit row', async () => {
+    const job = await prisma.emailJob.create({ data: { userId: userA.id, senderId: senderA.id, recipient: `cancel-${suffix}@example.com`, subject: 'Cancel me', body: 'Body', scheduledAt: new Date(Date.now() + 600_000), idempotencyKey: `cancel-${suffix}-unique` } });
+    createdJobIds.push(job.id);
+    const bullJob = await emailSendQueue.add('send-email', { emailJobId: job.id }, { jobId: `email-${job.id}`, delay: 600_000 });
+    await prisma.emailJob.update({ where: { id: job.id }, data: { bullJobId: bullJob.id } });
+    await expect(cancelEmail(userB.id, job.id)).rejects.toMatchObject({ statusCode: 404 });
+    await expect(cancelEmail(userA.id, job.id)).resolves.toEqual({ cancelled: true, id: job.id });
+    expect((await prisma.emailJob.findUnique({ where: { id: job.id }, select: { status: true } }))?.status).toBe('CANCELLED');
+    expect(await emailSendQueue.getJob(`email-${job.id}`)).toBeUndefined();
   });
 
   it('applies distributed hourly limits atomically under concurrent load', async () => {

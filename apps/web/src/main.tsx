@@ -34,6 +34,7 @@ function App() {
   const [senderName, setSenderName] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
   const [slack, setSlack] = useState<SlackStatus>({ connected: false });
+  const [cancellingId, setCancellingId] = useState<string>();
   const parse = (text: string) =>
     setRecipients([
       ...new Set(
@@ -107,6 +108,14 @@ function App() {
         : "Scheduling failed.",
     );
     if (response.ok) void load();
+  };
+  const cancelEmail = async (id: string) => {
+    if (!window.confirm("Cancel this scheduled email?")) return;
+    setCancellingId(id);
+    const response = await fetch(`${api}/api/emails/${id}/cancel`, { method: "POST", credentials: "include" });
+    setCancellingId(undefined);
+    if (response.ok) { setNotice("Email cancelled."); void load(); }
+    else setNotice("Could not cancel this email.");
   };
   return (
     <div className="app">
@@ -283,6 +292,7 @@ function App() {
                     {tab === "scheduled" ? "Scheduled time" : "Sent time"}
                   </th>
                   <th>Status</th>
+                  {tab === "scheduled" && <th>Actions</th>}
                   {tab === "sent" && <th>Preview</th>}
                 </tr>
               </thead>
@@ -299,6 +309,7 @@ function App() {
                       ).toLocaleString()}
                     </td>
                     <td>{email.status}</td>
+                    {tab === "scheduled" && <td><button className="table-action" disabled={cancellingId === email.id} onClick={() => void cancelEmail(email.id)}>{cancellingId === email.id ? "Cancelling…" : "Cancel"}</button></td>}
                     {tab === "sent" && (
                       <td>
                         {email.previewUrl ? (
