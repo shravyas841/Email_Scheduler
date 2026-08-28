@@ -126,6 +126,9 @@ function App() {
       <main>
         <section className="panel compose">
           <h2>Compose new email</h2>
+          <p className="lead">Send an email to your recipients</p>
+          <div className="form-section">
+            <div className="section-label">SENDER</div>
           <div className="grid">
             <label>
               New sender name
@@ -160,6 +163,9 @@ function App() {
               ))}
             </select>
           </label>
+          </div>
+          <div className="form-section">
+            <div className="section-label">RECIPIENTS</div>
           <label>
             CSV or text file
             <input
@@ -173,6 +179,7 @@ function App() {
           <label>
             Recipients
             <textarea
+              className="recipients"
               placeholder="Paste emails or CSV text"
               onChange={(event) => parse(event.target.value)}
             />
@@ -181,6 +188,9 @@ function App() {
             {recipients.length} valid unique email
             {recipients.length === 1 ? "" : "s"} detected
           </p>
+          </div>
+          <div className="form-section">
+            <div className="section-label">MESSAGE</div>
           <label>
             Subject
             <input
@@ -191,10 +201,14 @@ function App() {
           <label>
             Body
             <textarea
+              className="message"
               value={body}
               onChange={(event) => setBody(event.target.value)}
             />
           </label>
+          </div>
+          <div className="form-section">
+            <div className="section-label">SCHEDULE</div>
           <div className="grid">
             <label>
               Start time
@@ -211,6 +225,7 @@ function App() {
                 value={delay}
                 onChange={(event) => setDelay(event.target.value)}
               />
+              <span className="helper">Delay between each email</span>
             </label>
             <label>
               Hourly limit
@@ -219,7 +234,9 @@ function App() {
                 value={limit}
                 onChange={(event) => setLimit(event.target.value)}
               />
+              <span className="helper">Maximum emails allowed per hour</span>
             </label>
+          </div>
           </div>
           <button className="primary" onClick={() => void schedule()}>
             Schedule emails
