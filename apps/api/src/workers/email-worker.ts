@@ -9,6 +9,7 @@ import { EmailDeliveryService } from '../services/email-delivery-service.js';
 import { RateLimiter } from '../services/rate-limiter.js';
 import { indexEmail } from '../integrations/search/elasticsearch.js';
 import { notifyRateLimit } from '../services/slack-rate-notifier.js';
+import { rescheduleEmailJob } from '../services/email-rescheduling-service.js';
 
 const emailDeliveryService = new EmailDeliveryService();
 const rateLimiter = new RateLimiter();
@@ -34,7 +35,7 @@ const worker = new Worker<EmailSendQueueData>(
         const alertResult = await notifyRateLimit(emailJob.userId, emailJob.senderId, emailJob.sender.email, window);
         if (alertResult === 'sent') logger.info({ senderId: emailJob.senderId }, 'SLACK_NOTIFICATION_SENT');
       }
-      await queueJob.moveToDelayed(decision.retryAt, queueJob.token);
+      await rescheduleEmailJob(emailJob.id, decision.retryAt, () => queueJob.moveToDelayed(decision.retryAt, queueJob.token));
       logger.info({ emailJobId: emailJob.id, retryAt: decision.retryAt, reason: decision.reason }, 'EMAIL_RESCHEDULED');
       throw new DelayedError();
     }

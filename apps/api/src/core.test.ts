@@ -10,6 +10,7 @@ import { EmailSearchService } from './services/email-search-service.js';
 import { indexEmail, elasticsearch, emailIndex } from './integrations/search/elasticsearch.js';
 import { notifyRateLimit } from './services/slack-rate-notifier.js';
 import { cancelEmail } from './services/email-cancellation-service.js';
+import { rescheduleEmailJob } from './services/email-rescheduling-service.js';
 import { encrypt } from './integrations/slack/slack-service.js';
 import { requireAuth } from './middleware/auth.js';
 
@@ -125,6 +126,17 @@ describe('scheduling and rate limiting', () => {
     await redisConnection.del(`email:slot:${id}`);
     const hour = new Date(); hour.setUTCMinutes(0, 0, 0);
     await redisConnection.del(`email:rate:${id}:${hour.toISOString()}`);
+  });
+
+  it('stores the same timestamp used for delayed rescheduling', async () => {
+    const job = await prisma.emailJob.create({ data: { userId: userA.id, senderId: senderA.id, recipient: `reschedule-${suffix}@example.com`, subject: 'Reschedule', body: 'Body', scheduledAt: new Date(), idempotencyKey: `reschedule-${suffix}-unique` } });
+    createdJobIds.push(job.id);
+    const retryAt = Date.now() + 3_600_000;
+    let movedTo: number | undefined;
+    await rescheduleEmailJob(job.id, retryAt, async () => { movedTo = retryAt; });
+    const updated = await prisma.emailJob.findUnique({ where: { id: job.id }, select: { scheduledAt: true } });
+    expect(movedTo).toBe(retryAt);
+    expect(updated?.scheduledAt.getTime()).toBe(retryAt);
   });
 
   it('enforces minimum delay per sender', async () => {
