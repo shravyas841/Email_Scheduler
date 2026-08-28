@@ -273,6 +273,7 @@ function App() {
                     {tab === "scheduled" ? "Scheduled time" : "Sent time"}
                   </th>
                   <th>Status</th>
+                  {tab === "sent" && <th>Preview</th>}
                 </tr>
               </thead>
               <tbody>
@@ -288,6 +289,17 @@ function App() {
                       ).toLocaleString()}
                     </td>
                     <td>{email.status}</td>
+                    {tab === "sent" && (
+                      <td>
+                        {email.previewUrl ? (
+                          <a href={email.previewUrl} target="_blank" rel="noreferrer">
+                            View preview
+                          </a>
+                        ) : (
+                          <span className="muted">Unavailable</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
