@@ -10,4 +10,8 @@ export interface EmailSendQueueData {
 
 export const emailSendQueue = new Queue<EmailSendQueueData>(EMAIL_SEND_QUEUE_NAME, {
   connection: redisConnection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 1_000 },
+  },
 });

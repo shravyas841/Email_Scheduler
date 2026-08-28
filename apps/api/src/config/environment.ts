@@ -13,6 +13,12 @@ const environmentSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
   REDIS_URL: z.string().url().default('redis://localhost:6379'),
+  WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(100).default(10),
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65_535).default(587),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASSWORD: z.string().min(1).optional(),
+  SMTP_FROM: z.string().email().optional(),
 });
 
 const parsedEnvironment = environmentSchema.safeParse(process.env);
