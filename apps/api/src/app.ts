@@ -17,6 +17,7 @@ import { emailSendQueue } from './queues/email-send-queue.js';
 import { authRouter } from './routes/auth-routes.js';
 import { slackRouter } from './routes/slack-routes.js';
 import { senderRouter } from './routes/sender-routes.js';
+import { requireAuth } from './middleware/auth.js';
 
 const boardAdapter = new ExpressAdapter();
 boardAdapter.setBasePath('/admin/queues');
@@ -35,7 +36,7 @@ export const createApp = () => {
   );
   app.use(express.json({ limit: '1mb' }));
   app.use(session({ secret: environment.SESSION_SECRET, resave: false, saveUninitialized: false, cookie: { httpOnly: true, sameSite: 'lax', secure: environment.NODE_ENV === 'production', maxAge: 86_400_000 } }));
-  app.use('/admin/queues', boardAdapter.getRouter());
+  app.use('/admin/queues', requireAuth, boardAdapter.getRouter());
 
   app.use('/health', healthRouter);
   app.use('/api/auth', authRouter);
