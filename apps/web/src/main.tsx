@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
+import { parseCsv, type CsvIssue } from "./lead-parser";
 
 type User = { id: string; name: string; email: string; avatarUrl?: string };
 type Sender = { id: string; email: string; displayName: string };
@@ -15,7 +16,6 @@ type Email = {
 };
 type SlackStatus = { connected: boolean; connection?: { workspaceName?: string | null } | null };
 const api = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
-const emailPattern = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 
 function App() {
   const [user, setUser] = useState<User>();
@@ -36,12 +36,9 @@ function App() {
   const [slack, setSlack] = useState<SlackStatus>({ connected: false });
   const [cancellingId, setCancellingId] = useState<string>();
   const [sessionExpired, setSessionExpired] = useState(false);
-  const parse = (text: string) =>
-    setRecipients([
-      ...new Set(
-        text.match(emailPattern)?.map((email) => email.toLowerCase()) ?? [],
-      ),
-    ]);
+  const [csvSummary, setCsvSummary] = useState<{ duplicates: number; invalidRows: CsvIssue[]; error?: string }>();
+  const parseManual = (text: string) => { setRecipients([...new Set(text.match(/[^\s,;]+@[^\s,;]+\.[^\s,;]+/g)?.map((email) => email.toLowerCase()) ?? [])]); setCsvSummary(undefined); };
+  const parseFile = (text: string) => { const result = parseCsv(text); setRecipients(result.recipients); setCsvSummary({ duplicates: result.duplicates, invalidRows: result.invalidRows, error: result.error }); };
   const load = async () => {
     setLoading(true);
     const [me, senderResponse, emailResponse, slackResponse] = await Promise.all([
@@ -195,7 +192,7 @@ function App() {
               type="file"
               accept=".csv,.txt,text/csv,text/plain"
               onChange={(event) =>
-                void event.target.files?.[0]?.text().then(parse)
+                void event.target.files?.[0]?.text().then(parseFile)
               }
             />
           </label>
@@ -204,13 +201,14 @@ function App() {
             <textarea
               className="recipients"
               placeholder="Paste emails or CSV text"
-              onChange={(event) => parse(event.target.value)}
+              onChange={(event) => parseManual(event.target.value)}
             />
           </label>
           <p className="muted">
             {recipients.length} valid unique email
             {recipients.length === 1 ? "" : "s"} detected
           </p>
+          {csvSummary && <div className="csv-summary"><strong>{csvSummary.error ? "CSV could not be processed" : "CSV processed"}</strong>{csvSummary.error ? <span className="csv-error">{csvSummary.error}</span> : <><span>✓ {recipients.length} valid unique recipient{recipients.length === 1 ? "" : "s"}</span>{csvSummary.duplicates > 0 && <span>↻ {csvSummary.duplicates} duplicate{csvSummary.duplicates === 1 ? "" : "s"} removed</span>}{csvSummary.invalidRows.length > 0 && <span className="csv-error">⚠ {csvSummary.invalidRows.length} invalid row{csvSummary.invalidRows.length === 1 ? "" : "s"}</span>}{csvSummary.invalidRows.map((issue) => <small className="csv-error" key={`${issue.row}-${issue.message}`}>Row {issue.row}: {issue.message}</small>)}</>}</div>}
           </div>
           <div className="form-section">
             <div className="section-label">MESSAGE</div>
