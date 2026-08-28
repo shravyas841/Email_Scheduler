@@ -1,4 +1,4 @@
-import { Worker } from 'bullmq';
+import { DelayedError, Worker } from 'bullmq';
 
 import { prisma, disconnectDatabase, connectDatabase } from '../config/database.js';
 import { environment } from '../config/environment.js';
@@ -6,8 +6,10 @@ import { logger } from '../config/logger.js';
 import { EMAIL_SEND_QUEUE_NAME, type EmailSendQueueData } from '../queues/email-send-queue.js';
 import { redisConnection } from '../queues/redis-connection.js';
 import { EmailDeliveryService } from '../services/email-delivery-service.js';
+import { RateLimiter } from '../services/rate-limiter.js';
 
 const emailDeliveryService = new EmailDeliveryService();
+const rateLimiter = new RateLimiter();
 
 const worker = new Worker<EmailSendQueueData>(
   EMAIL_SEND_QUEUE_NAME,
@@ -18,6 +20,17 @@ const worker = new Worker<EmailSendQueueData>(
     });
 
     if (!emailJob || emailJob.status === 'SENT' || emailJob.status === 'CANCELLED') return;
+
+    const decision = await rateLimiter.reserve(
+      emailJob.senderId,
+      emailJob.sender.minimumDelayMs ?? environment.MIN_EMAIL_DELAY_MS,
+      emailJob.sender.hourlyLimit ?? environment.MAX_EMAILS_PER_HOUR_PER_SENDER,
+    );
+    if (!decision.allowed) {
+      await queueJob.moveToDelayed(decision.retryAt, queueJob.token);
+      logger.info({ emailJobId: emailJob.id, retryAt: decision.retryAt, reason: decision.reason }, 'EMAIL_RESCHEDULED');
+      throw new DelayedError();
+    }
 
     const claimed = await prisma.emailJob.updateMany({
       where: { id: emailJob.id, status: 'SCHEDULED' },
