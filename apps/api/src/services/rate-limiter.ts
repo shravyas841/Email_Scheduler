@@ -4,9 +4,9 @@ const reserveSlotScript = `
 local now = tonumber(ARGV[1])
 local delay = tonumber(ARGV[2])
 local nextSlot = tonumber(redis.call('GET', KEYS[1]) or '0')
-local reserved = math.max(now, nextSlot)
-redis.call('SET', KEYS[1], reserved + delay, 'PX', 86400000)
-return reserved
+if nextSlot > now then return nextSlot end
+redis.call('SET', KEYS[1], now + delay, 'PX', 86400000)
+return now
 `;
 
 const reserveHourlyScript = `

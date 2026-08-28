@@ -86,13 +86,33 @@ describe('scheduling and rate limiting', () => {
     await redisConnection.del(`email:rate:${id}:${hour.toISOString()}`);
   });
 
+  it('keeps hourly-limited jobs parked in the next window', async () => {
+    const limiter = new RateLimiter();
+    const id = `hourly-test-${suffix}`;
+    expect((await limiter.reserve(id, 0, 2)).allowed).toBe(true);
+    expect((await limiter.reserve(id, 0, 2)).allowed).toBe(true);
+    const blocked = await limiter.reserve(id, 0, 2);
+    expect(blocked.allowed).toBe(false);
+    if (!blocked.allowed) {
+      expect(blocked.reason).toBe('hourly-limit');
+      expect(await limiter.reserve(id, 0, 2)).toEqual(blocked);
+    }
+    await redisConnection.del(`email:slot:${id}`);
+    const hour = new Date(); hour.setUTCMinutes(0, 0, 0);
+    await redisConnection.del(`email:rate:${id}:${hour.toISOString()}`);
+  });
+
   it('enforces minimum delay per sender', async () => {
     const limiter = new RateLimiter();
     const id = `delay-test-${suffix}`;
     expect(await limiter.reserve(id, 60_000, 10)).toEqual({ allowed: true });
     const next = await limiter.reserve(id, 60_000, 10);
     expect(next.allowed).toBe(false);
-    if (!next.allowed) expect(next.reason).toBe('delay');
+    if (!next.allowed) {
+      expect(next.reason).toBe('delay');
+      const again = await limiter.reserve(id, 60_000, 10);
+      expect(again).toEqual(next);
+    }
     await redisConnection.del(`email:slot:${id}`);
   });
 });
