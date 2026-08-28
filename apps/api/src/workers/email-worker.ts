@@ -34,8 +34,9 @@ const worker = new Worker<EmailSendQueueData>(
         const window = new Date(); window.setUTCMinutes(0, 0, 0);
         const alertKey = `slack-rate-alert:${emailJob.senderId}:${window.toISOString()}`;
         const firstAlert = await redisConnection.set(alertKey, '1', 'EX', 7200, 'NX');
-        if (slack?.channelId && firstAlert === 'OK') {
-          try { await notifySlack(decrypt(slack.accessTokenEncrypted), slack.channelId, `Rate limit reached for ${emailJob.sender.email}. Additional emails have been rescheduled.`); logger.info({ senderId: emailJob.senderId }, 'SLACK_NOTIFICATION_SENT'); }
+        const channelId = slack?.channelId ?? environment.SLACK_DEFAULT_CHANNEL_ID;
+        if (slack && channelId && firstAlert === 'OK') {
+          try { await notifySlack(decrypt(slack.accessTokenEncrypted), channelId, `Rate limit reached for ${emailJob.sender.email}. Additional emails have been rescheduled.`); logger.info({ senderId: emailJob.senderId }, 'SLACK_NOTIFICATION_SENT'); }
           catch (error) { logger.error({ err: error, senderId: emailJob.senderId }, 'SLACK_NOTIFICATION_FAILED'); }
         }
       }
