@@ -30,6 +30,10 @@ const environmentSchema = z.object({
   GOOGLE_CLIENT_SECRET: optionalValue,
   GOOGLE_CALLBACK_URL: optionalUrl,
   SESSION_SECRET: z.string().min(32).default('development-session-secret-change-me-32'),
+  SLACK_CLIENT_ID: optionalValue,
+  SLACK_CLIENT_SECRET: optionalValue,
+  SLACK_REDIRECT_URI: optionalUrl,
+  SLACK_DEFAULT_CHANNEL_ID: optionalValue,
 });
 
 const parsedEnvironment = environmentSchema.safeParse(process.env);
