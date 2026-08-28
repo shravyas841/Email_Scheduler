@@ -16,6 +16,7 @@ import { healthRouter } from './routes/health-routes.js';
 import { emailSendQueue } from './queues/email-send-queue.js';
 import { authRouter } from './routes/auth-routes.js';
 import { slackRouter } from './routes/slack-routes.js';
+import { senderRouter } from './routes/sender-routes.js';
 
 const boardAdapter = new ExpressAdapter();
 boardAdapter.setBasePath('/admin/queues');
@@ -39,6 +40,7 @@ export const createApp = () => {
   app.use('/health', healthRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/slack', slackRouter);
+  app.use('/api/senders', senderRouter);
   app.use('/api/emails', emailRouter);
   app.use('/api/emails', searchRouter);
   app.use(notFoundHandler);
