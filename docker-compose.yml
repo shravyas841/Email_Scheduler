@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-reachinbox}
+      POSTGRES_USER: ${POSTGRES_USER:-reachinbox}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-for-local-development}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reachinbox -d reachinbox"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      xpack.security.http.ssl.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+
+volumes:
+  postgres_data:
+  redis_data:
+  elasticsearch_data:
