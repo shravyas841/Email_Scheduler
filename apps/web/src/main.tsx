@@ -236,7 +236,8 @@ function App() {
             <label>
               Start time
               <input
-                type="datetime-local"
+              type="datetime-local"
+              className="schedule-time"
                 value={startTime}
                 onChange={(event) => setStartTime(event.target.value)}
               />
@@ -244,7 +245,8 @@ function App() {
             <label>
               Delay (ms)
               <input
-                type="number"
+              type="number"
+              className="schedule-number"
                 value={delay}
                 onChange={(event) => setDelay(event.target.value)}
               />
@@ -253,7 +255,8 @@ function App() {
             <label>
               Hourly limit
               <input
-                type="number"
+              type="number"
+              className="schedule-number"
                 value={limit}
                 onChange={(event) => setLimit(event.target.value)}
               />

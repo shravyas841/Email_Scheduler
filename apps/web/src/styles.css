@@ -148,6 +148,19 @@ select:focus {
   border-color: #8c7dff;
   box-shadow: 0 0 0 3px #7667f522;
 }
+.schedule-time::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.8);
+  opacity: 0.95;
+  cursor: pointer;
+}
+.schedule-number::-webkit-inner-spin-button,
+.schedule-number::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+.schedule-number {
+  -moz-appearance: textfield;
+}
 select {
   appearance: auto;
 }
