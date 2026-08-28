@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EmailStatus {
+  SCHEDULED
+  PROCESSING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum DeliveryAttemptOutcome {
+  STARTED
+  SENT
+  FAILED
+  AMBIGUOUS
+}
+
+model User {
+  id              String           @id @default(cuid())
+  googleId        String?          @unique
+  name            String
+  email           String           @unique
+  avatarUrl       String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  senders         Sender[]
+  emailJobs       EmailJob[]
+  slackConnection SlackConnection?
+}
+
+model Sender {
+  id                  String            @id @default(cuid())
+  userId              String
+  email               String
+  displayName         String
+  smtpConfigEncrypted String?
+  hourlyLimit         Int?
+  minimumDelayMs      Int?
+  isActive            Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailJobs           EmailJob[]
+  rateLimitWindows    RateLimitWindow[]
+
+  @@unique([userId, email])
+  @@index([userId, isActive])
+}
+
+model EmailJob {
+  id                String            @id @default(cuid())
+  userId            String
+  senderId          String
+  recipient         String
+  subject           String
+  body              String
+  scheduledAt       DateTime
+  status            EmailStatus       @default(SCHEDULED)
+  bullJobId         String?           @unique
+  idempotencyKey    String
+  attempts          Int               @default(0)
+  processingStartedAt DateTime?
+  sentAt            DateTime?
+  failedAt          DateTime?
+  failureReason     String?
+  providerMessageId String?
+  previewUrl        String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sender            Sender            @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  deliveryAttempts  DeliveryAttempt[]
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, status, scheduledAt])
+  @@index([senderId, status, scheduledAt])
+}
+
+model DeliveryAttempt {
+  id                String                 @id @default(cuid())
+  emailJobId        String
+  attemptNumber     Int
+  outcome           DeliveryAttemptOutcome @default(STARTED)
+  providerMessageId String?
+  errorMessage      String?
+  startedAt         DateTime               @default(now())
+  completedAt       DateTime?
+  emailJob          EmailJob               @relation(fields: [emailJobId], references: [id], onDelete: Cascade)
+
+  @@unique([emailJobId, attemptNumber])
+  @@index([emailJobId, outcome])
+}
+
+model RateLimitWindow {
+  id          String   @id @default(cuid())
+  senderId    String
+  windowStart DateTime
+  limit       Int
+  count       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sender      Sender   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, windowStart])
+  @@index([windowStart])
+}
+
+model SlackConnection {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  workspaceId           String
+  workspaceName         String?
+  channelId             String?
+  accessTokenEncrypted  String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
