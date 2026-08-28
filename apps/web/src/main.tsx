@@ -35,6 +35,7 @@ function App() {
   const [senderEmail, setSenderEmail] = useState("");
   const [slack, setSlack] = useState<SlackStatus>({ connected: false });
   const [cancellingId, setCancellingId] = useState<string>();
+  const [sessionExpired, setSessionExpired] = useState(false);
   const parse = (text: string) =>
     setRecipients([
       ...new Set(
@@ -49,6 +50,9 @@ function App() {
       fetch(`${api}/api/emails/${tab}`, { credentials: "include" }),
       fetch(`${api}/api/slack/status`, { credentials: "include" }),
     ]);
+    const unauthorized = [me, senderResponse, emailResponse, slackResponse].some((response) => response.status === 401);
+    setSessionExpired(unauthorized);
+    if (unauthorized) { setEmails([]); setSenders([]); }
     if (me.ok) setUser((await me.json()).user);
     if (senderResponse.ok) {
       const data = (await senderResponse.json()).senders as Sender[];
@@ -280,7 +284,9 @@ function App() {
               </button>
             </div>
           </div>
-          {loading ? (
+          {sessionExpired ? (
+            <div className="empty error-state"><strong>Session expired</strong><span>Sign in again to view your emails.</span><button className="sign-in" onClick={() => { window.location.href = `${api}/api/auth/google`; }}>Sign in with Google</button></div>
+          ) : loading ? (
             <div className="empty">Loading…</div>
           ) : emails.length ? (
             <table>

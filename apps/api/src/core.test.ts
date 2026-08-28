@@ -18,6 +18,12 @@ let userA: { id: string };
 let userB: { id: string };
 let senderA: { id: string; email: string };
 const createdJobIds: string[] = [];
+const removeTestJobs = async () => {
+  for (const id of createdJobIds) {
+    const job = await emailSendQueue.getJob(`email-${id}`);
+    if (job) await job.remove();
+  }
+};
 
 beforeAll(async () => {
   await prisma.$connect();
@@ -27,7 +33,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await emailSendQueue.obliterate({ force: true }).catch(() => undefined);
+  await removeTestJobs();
   await prisma.emailJob.deleteMany({ where: { id: { in: createdJobIds } } });
   await prisma.sender.deleteMany({ where: { id: senderA.id } });
   await prisma.user.deleteMany({ where: { id: { in: [userA.id, userB.id] } } });
@@ -74,6 +80,13 @@ describe('scheduling and rate limiting', () => {
     expect(jobs.every((job) => job?.opts.delay && job.opts.delay > 0)).toBe(true);
     expect((await service.schedule(input)).scheduledCount).toBe(2);
     await expect(service.schedule({ ...input, userId: userB.id })).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('test cleanup removes only jobs created by the test run', async () => {
+    const unrelated = await emailSendQueue.add('send-email', { emailJobId: `unrelated-${suffix}` }, { jobId: `manual-${suffix}`, delay: 600_000 });
+    await removeTestJobs();
+    expect(await emailSendQueue.getJob(unrelated.id!)).toBeTruthy();
+    await unrelated.remove();
   });
 
   it('cancels only the owner\'s scheduled job and preserves its audit row', async () => {
