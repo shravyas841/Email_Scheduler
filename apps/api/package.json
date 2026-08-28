@@ -13,6 +13,8 @@
     "prisma:deploy": "dotenv -e ../../.env -- prisma migrate deploy"
   },
   "dependencies": {
+    "@bull-board/api": "^6.21.3",
+    "@bull-board/express": "^6.21.3",
     "@elastic/elasticsearch": "^8.19.2",
     "@prisma/client": "6.12.0",
     "bullmq": "^5.81.4",
