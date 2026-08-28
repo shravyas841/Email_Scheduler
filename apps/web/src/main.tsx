@@ -4,7 +4,7 @@ import './styles.css';
 
 type User = { id: string; name: string; email: string; avatarUrl?: string };
 type Sender = { id: string; email: string; displayName: string };
-type Email = { id: string; recipient: string; subject: string; scheduledAt?: string; sentAt?: string; status: string };
+type Email = { id: string; recipient: string; subject: string; scheduledAt?: string; sentAt?: string; status: string; previewUrl?: string | null };
 const api = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
 const emailPattern = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 
