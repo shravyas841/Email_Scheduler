@@ -13,6 +13,7 @@ type Email = {
   status: string;
   previewUrl?: string | null;
 };
+type SlackStatus = { connected: boolean; connection?: { workspaceName?: string | null } | null };
 const api = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 const emailPattern = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 
@@ -32,6 +33,7 @@ function App() {
   const [limit, setLimit] = useState("200");
   const [senderName, setSenderName] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
+  const [slack, setSlack] = useState<SlackStatus>({ connected: false });
   const parse = (text: string) =>
     setRecipients([
       ...new Set(
@@ -40,10 +42,11 @@ function App() {
     ]);
   const load = async () => {
     setLoading(true);
-    const [me, senderResponse, emailResponse] = await Promise.all([
+    const [me, senderResponse, emailResponse, slackResponse] = await Promise.all([
       fetch(`${api}/api/auth/me`, { credentials: "include" }),
       fetch(`${api}/api/senders`, { credentials: "include" }),
       fetch(`${api}/api/emails/${tab}`, { credentials: "include" }),
+      fetch(`${api}/api/slack/status`, { credentials: "include" }),
     ]);
     if (me.ok) setUser((await me.json()).user);
     if (senderResponse.ok) {
@@ -52,7 +55,13 @@ function App() {
       setSenderId((current) => current || data[0]?.id || "");
     }
     if (emailResponse.ok) setEmails((await emailResponse.json()).emails);
+    if (slackResponse.ok) setSlack(await slackResponse.json());
     setLoading(false);
+  };
+  const disconnectSlack = async () => {
+    const response = await fetch(`${api}/api/slack/disconnect`, { method: "POST", credentials: "include" });
+    if (response.ok) { setSlack({ connected: false }); setNotice("Slack disconnected."); }
+    else setNotice("Could not disconnect Slack.");
   };
   useEffect(() => {
     void load();
@@ -124,6 +133,7 @@ function App() {
         </div>
       </header>
       <main>
+        {user && <section className="integration panel"><div><div className="section-label">INTEGRATIONS</div><strong>Slack notifications</strong><p className="muted">Get notified when a sender reaches its hourly limit.</p></div>{slack.connected ? <div className="integration-actions"><span className="connected">Connected{slack.connection?.workspaceName ? ` · ${slack.connection.workspaceName}` : ""}</span><button onClick={() => void disconnectSlack()}>Disconnect</button></div> : <button className="secondary" onClick={() => { window.location.href = `${api}/api/slack/connect`; }}>Connect Slack</button>}</section>}
         <section className="panel compose">
           <h2>Compose new email</h2>
           <p className="lead">Send an email to your recipients</p>
