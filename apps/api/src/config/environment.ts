@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 const optionalValue = z.preprocess((value) => (value === '' ? undefined : value), z.string().min(1).optional());
 const optionalEmail = z.preprocess((value) => (value === '' ? undefined : value), z.string().email().optional());
+const optionalUrl = z.preprocess((value) => (value === '' ? undefined : value), z.string().url().optional());
 
 dotenv.config({
   path: fileURLToPath(new URL('../../../../.env', import.meta.url)),
@@ -25,6 +26,10 @@ const environmentSchema = z.object({
   SMTP_USER: optionalValue,
   SMTP_PASSWORD: optionalValue,
   SMTP_FROM: optionalEmail,
+  GOOGLE_CLIENT_ID: optionalValue,
+  GOOGLE_CLIENT_SECRET: optionalValue,
+  GOOGLE_CALLBACK_URL: optionalUrl,
+  SESSION_SECRET: z.string().min(32).default('development-session-secret-change-me-32'),
 });
 
 const parsedEnvironment = environmentSchema.safeParse(process.env);

@@ -21,6 +21,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
+    "express-session": "^1.19.0",
+    "google-auth-library": "^9.15.1",
     "helmet": "^8.1.0",
     "ioredis": "^5.11.1",
     "nodemailer": "9.0.6",
@@ -31,6 +33,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/express-session": "^1.19.0",
     "@types/node": "^22.15.30",
     "@types/nodemailer": "^6.4.24",
     "dotenv-cli": "^8.0.0",

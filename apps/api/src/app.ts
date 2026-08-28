@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
+import session from 'express-session';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
@@ -13,6 +14,7 @@ import { emailRouter } from './routes/email-routes.js';
 import { searchRouter } from './routes/search-routes.js';
 import { healthRouter } from './routes/health-routes.js';
 import { emailSendQueue } from './queues/email-send-queue.js';
+import { authRouter } from './routes/auth-routes.js';
 
 const boardAdapter = new ExpressAdapter();
 boardAdapter.setBasePath('/admin/queues');
@@ -30,9 +32,11 @@ export const createApp = () => {
     }),
   );
   app.use(express.json({ limit: '1mb' }));
+  app.use(session({ secret: environment.SESSION_SECRET, resave: false, saveUninitialized: false, cookie: { httpOnly: true, sameSite: 'lax', secure: environment.NODE_ENV === 'production', maxAge: 86_400_000 } }));
   app.use('/admin/queues', boardAdapter.getRouter());
 
   app.use('/health', healthRouter);
+  app.use('/api/auth', authRouter);
   app.use('/api/emails', emailRouter);
   app.use('/api/emails', searchRouter);
   app.use(notFoundHandler);
