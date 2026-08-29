@@ -1,6 +1,6 @@
-# ReachInbox Email Job Scheduler
+# Email Job Scheduler
 
-ReachInbox is a durable, multi-tenant email scheduler built with Express/TypeScript, PostgreSQL, Redis/BullMQ, Elasticsearch, and a React/Vite dashboard. It expands one scheduling request into one durable job per recipient, enforces sender-level spacing and hourly quotas across workers, and records delivery history.
+This is a durable, multi-tenant email scheduler built with Express/TypeScript, PostgreSQL, Redis/BullMQ, Elasticsearch, and a React/Vite dashboard. It expands one scheduling request into one durable job per recipient, enforces sender-level spacing and hourly quotas across workers, and records delivery history.
 
 ## Run locally
 

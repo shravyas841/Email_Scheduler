@@ -1,4 +1,4 @@
-# ReachInbox Email Job Scheduler — Technical Requirements
+# Email Job Scheduler — Technical Requirements
 
 ## Architecture
 

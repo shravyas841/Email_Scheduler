@@ -124,9 +124,10 @@ function App() {
   };
   return (
     <div className="app">
+      <div className="workspace">
       <header>
         <div>
-          <span className="eyebrow">REACHINBOX</span>
+          <span className="eyebrow">WORKSPACE</span>
           <h1>Email scheduler</h1>
         </div>
         <div className="profile">
@@ -148,7 +149,7 @@ function App() {
       </header>
       <main>
         {user && <section className="integration panel"><div><div className="section-label">INTEGRATIONS</div><strong>Slack notifications</strong><p className="muted">Get notified when a sender reaches its hourly limit.</p></div>{slack.connected ? <div className="integration-actions"><span className="connected">Connected{slack.connection?.workspaceName ? ` · ${slack.connection.workspaceName}` : ""}</span><button onClick={() => void disconnectSlack()}>Disconnect</button></div> : <button className="secondary" onClick={() => { window.location.href = `${api}/api/slack/connect`; }}>Connect Slack</button>}</section>}
-        <section className="panel compose">
+        <section id="compose" className="panel compose">
           <h2>Compose new email</h2>
           <p className="lead">Send an email to your recipients</p>
           <div className="form-section">
@@ -343,6 +344,7 @@ function App() {
           )}
         </section>
       </main>
+      </div>
     </div>
   );
 }

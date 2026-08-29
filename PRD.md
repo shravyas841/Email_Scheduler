@@ -1,4 +1,4 @@
-# ReachInbox Email Job Scheduler — Product Requirements
+# Email Job Scheduler — Product Requirements
 
 ## Purpose
 
