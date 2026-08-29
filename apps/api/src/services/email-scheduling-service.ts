@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { z } from 'zod';
+import type { Prisma } from '@prisma/client';
 
 import { prisma } from '../config/database.js';
 import { AppError } from '../errors/app-error.js';
@@ -38,7 +39,7 @@ export class EmailSchedulingService {
       throw new AppError(404, 'SENDER_NOT_FOUND', 'Active sender was not found for this user.');
     }
 
-    const emailJobs = await prisma.$transaction(async (transaction) => {
+    const emailJobs: Prisma.EmailJobGetPayload<{}>[] = await prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
       await transaction.sender.update({
         where: { id: sender.id },
         data: {
